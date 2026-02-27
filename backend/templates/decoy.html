@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cerberus National Bank — Secure Portal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0a1628;
+      --navy-mid: #112240;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --white: #f0f4ff;
+      --gray: #8a9bb5;
+      --red: #e05454;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* Subtle red glow hint — invisible to attacker but logged */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(224,84,84,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .top-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+    }
+
+    /* ── FAKE LOADING SCREEN ─── */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      transition: opacity 0.5s;
+    }
+
+    .loading-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 48px; height: 48px;
+      border: 3px solid rgba(201,168,76,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { color: var(--gray); font-size: 14px; }
+    .loading-status { color: var(--gold); font-size: 12px; margin-top: 8px; font-family: monospace; }
+
+    /* ── DECOY DASHBOARD ─── */
+    .decoy-content {
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+
+    .decoy-content.visible { opacity: 1; }
+
+    .card {
+      background: var(--navy-mid);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(201,168,76,0.1);
+    }
+
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+
+    .bank-name { font-size: 17px; font-weight: 700; }
+    .bank-sub { font-size: 11px; color: var(--gold); letter-spacing: 1.5px; text-transform: uppercase; }
+
+    .welcome-msg { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .welcome-sub { font-size: 13px; color: var(--gray); margin-bottom: 28px; }
+
+    .balance-card {
+      background: linear-gradient(135deg, rgba(201,168,76,0.1), rgba(201,168,76,0.05));
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .balance-label { font-size: 11px; color: var(--gray); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .balance-value { font-size: 32px; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
+    .balance-acct { font-size: 12px; color: var(--gray); }
+
+    .fake-txns { margin-top: 20px; }
+    .fake-txn-label { font-size: 12px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+    .fake-txn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .fake-txn:last-child { border-bottom: none; }
+
+    .fake-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--gray);
+      opacity: 0.4;
+    }
+
+    .fake-desc { flex: 1; font-size: 13px; color: rgba(240,244,255,0.5); }
+    .fake-amt { font-size: 13px; color: rgba(240,244,255,0.3); }
+
+    /* CERBERUS HIDDEN INDICATOR — dev only */
+    .cerberus-silent {
+      position: fixed;
+      bottom: 12px;
+      right: 16px;
+      font-size: 10px;
+      color: rgba(224,84,84,0.25);
+      font-family: monospace;
+      letter-spacing: 0.5px;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .notice {
+      margin-top: 20px;
+      padding: 12px 16px;
+      background: rgba(201,168,76,0.07);
+      border: 1px solid rgba(201,168,76,0.15);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--gray);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar"></div>
+
+  <!-- FAKE LOADING SCREEN — makes it feel real -->
+  <div class="loading-screen" id="loader">
+    <div class="spinner"></div>
+    <div class="loading-text">Authenticating your session...</div>
+    <div class="loading-status" id="load-status">Verifying credentials...</div>
+  </div>
+
+  <!-- DECOY DASHBOARD (shown after fake load) -->
+  <div class="decoy-content" id="decoy">
+    <div class="card">
+      <div class="logo-area">
+        <div class="logo-icon">🏛️</div>
+        <div>
+          <div class="bank-name">Cerberus National Bank</div>
+          <div class="bank-sub">Secure Government Banking</div>
+        </div>
+      </div>
+
+      <div class="welcome-msg">Welcome back</div>
+      <div class="welcome-sub">Your session is being prepared securely...</div>
+
+      <div class="balance-card">
+        <div class="balance-label">Available Balance</div>
+        <div class="balance-value">$——,———.——</div>
+        <div class="balance-acct">Account ending in ••••</div>
+      </div>
+
+      <div class="fake-txns">
+        <div class="fake-txn-label">Recent Transactions</div>
+        <div class="fake-txn"><div class="fake-dot"></div><div class="fake-desc">Loading transaction history...</div><div class="fake-amt">———</div></div>
+        <div class="fake-txn"><div class="fake-dot"></div><div class="fake-desc">Retrieving account data...</div><div class="fake-amt">———</div></div>
+        <div class="fake-txn"><div class="fake-dot"></div><div class="fake-desc">Syncing with secure server...</div><div class="fake-amt">———</div></div>
+      </div>
+
+      <div class="notice">
+        🔒 Please wait while we securely load your account information. This may take a moment.
+      </div>
+    </div>
+  </div>
+
+  <!-- Cerberus fingerprint (hidden from attacker, visible to analysts) -->
+  <div class="cerberus-silent">🐺 CERBERUS DECOY ACTIVE · SESSION LOGGED</div>
+
+  <script>
+    const statuses = [
+      "Verifying credentials...",
+      "Establishing secure channel...",
+      "Loading account profile...",
+      "Initializing session tokens...",
+      "Almost ready...",
+    ];
+
+    let i = 0;
+    const statusEl = document.getElementById('load-status');
+    const loader = document.getElementById('loader');
+    const decoy = document.getElementById('decoy');
+
+    const interval = setInterval(() => {
+      if (i < statuses.length - 1) {
+        i++;
+        statusEl.textContent = statuses[i];
+      } else {
+        clearInterval(interval);
+        // Transition to decoy dashboard
+        setTimeout(() => {
+          loader.classList.add('hidden');
+          setTimeout(() => {
+            decoy.classList.add('visible');
+          }, 200);
+        }, 800);
+      }
+    }, 900);
+
+    // Log fingerprint to Cerberus (future: beacon to Cerberus backend)
+    console.info('[CERBERUS] Decoy session initiated. Attacker activity being monitored.');
+    console.info('[CERBERUS] Payload: ' + JSON.stringify({
+      ts: new Date().toISOString(),
+      ua: navigator.userAgent,
+      screen: screen.width + 'x' + screen.height,
+      lang: navigator.language
+    }));
+  </script>
+</body>
+</html>

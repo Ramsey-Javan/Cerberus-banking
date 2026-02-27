@@ -1,0 +1,77 @@
+version: "3.9"
+
+# ╔══════════════════════════════════════════════════════════╗
+# ║          CERBERUS BANKING SYSTEM — Docker Compose       ║
+# ║                                                          ║
+# ║  Services:                                               ║
+# ║    • banking-api   FastAPI backend on port 8000          ║
+# ║                                                          ║
+# ║  Future Cerberus services can be added here:             ║
+# ║    • cerberus-decoy-engine    (port 8001)                ║
+# ║    • cerberus-sentinel        (port 8002)                ║
+# ║    • cerberus-bec-assassin    (port 8003)                ║
+# ║    • cerberus-dashboard       (port 8080)                ║
+# ╚══════════════════════════════════════════════════════════╝
+
+services:
+
+  # ── PRIMARY BANKING API ───────────────────────────────────
+  banking-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cerberus-banking-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - sqlite-data:/data          # persistent SQLite database
+      - ./backend:/app             # live reload in dev
+    environment:
+      - SECRET_KEY=cerberus-super-secret-change-in-production
+      - ENVIRONMENT=development
+      - PROXY_SECRET_KEY=cerberus-proxy-secret-change-in-production
+    networks:
+      - cerberus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/cerberus/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── FUTURE: CERBERUS DECOY ENGINE ─────────────────────────
+  # cerberus-decoy:
+  #   image: cerberus/decoy-engine:latest
+  #   container_name: cerberus-decoy
+  #   ports:
+  #     - "8001:8001"
+  #   networks:
+  #     - cerberus-net
+
+  # ── FUTURE: CREDENTIAL SENTINEL ───────────────────────────
+  # cerberus-sentinel:
+  #   image: cerberus/credential-sentinel:latest
+  #   container_name: cerberus-sentinel
+  #   ports:
+  #     - "8002:8002"
+  #   networks:
+  #     - cerberus-net
+
+  # ── FUTURE: BEC ASSASSIN ──────────────────────────────────
+  # cerberus-bec:
+  #   image: cerberus/bec-assassin:latest
+  #   container_name: cerberus-bec
+  #   ports:
+  #     - "8003:8003"
+  #   networks:
+  #     - cerberus-net
+
+volumes:
+  sqlite-data:
+    driver: local
+    name: cerberus-banking-db
+
+networks:
+  cerberus-net:
+    driver: bridge
+    name: cerberus-network
