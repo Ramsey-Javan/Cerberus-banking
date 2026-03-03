@@ -30,6 +30,46 @@ DEMO_USERS = [
         "account_number": "4820-0000-0001",
         "balance": 1_250_000.00,
     },
+    {
+        "username": "mchen",
+        "full_name": "Michael Chen",
+        "email": "m.chen@example.com",
+        "password": "Pass2024!",
+        "account_number": "4820-0011-7788",
+        "balance": 15_620.50,
+    },
+    {
+        "username": "sjohnson",
+        "full_name": "Sarah Johnson",
+        "email": "s.johnson@example.com",
+        "password": "SecurePass99!",
+        "account_number": "4820-0011-9900",
+        "balance": 32_175.30,
+    },
+    {
+        "username": "drodriguez",
+        "full_name": "David Rodriguez",
+        "email": "d.rodriguez@example.com",
+        "password": "DavidRod42!",
+        "account_number": "4820-0011-1122",
+        "balance": 18_945.65,
+    },
+    {
+        "username": "eevans",
+        "full_name": "Emma Evans",
+        "email": "e.evans@example.com",
+        "password": "Emma2024@!",
+        "account_number": "4820-0011-3344",
+        "balance": 22_310.20,
+    },
+    {
+        "username": "klee",
+        "full_name": "Kyle Lee",
+        "email": "k.lee@example.com",
+        "password": "KyleL99#",
+        "account_number": "4820-0011-5577",
+        "balance": 11_750.75,
+    },
 ]
 
 TRANSACTION_TEMPLATES = [

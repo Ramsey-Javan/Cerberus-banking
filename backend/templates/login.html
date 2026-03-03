@@ -258,9 +258,17 @@
   
     <script>
     (function() {
+    // durations and paste detection for username/password fields
     let usernameStart, passwordStart;
     let usernameDuration = 0, passwordDuration = 0;
     let usernamePasted = false, passwordPasted = false;
+
+    // detailed keystroke timing arrays for password field only
+    let holds = [];
+    let latencies = [];
+    let flights = [];
+    let lastKeyDownTime = null;
+    let lastKeyUpTime = null;
 
     const usernameField = document.getElementById('username');
     const passwordField = document.getElementById('password');
@@ -284,15 +292,54 @@
       passwordPasted = true;
     });
 
+    // capture per‑key hold, latency and flight times on password field
+    passwordField.addEventListener('keydown', (e) => {
+      const now = Date.now();
+      if (lastKeyDownTime !== null) {
+        // time between consecutive keydowns
+        flights.push(now - lastKeyDownTime);
+      }
+      if (lastKeyUpTime !== null) {
+        // latency: time from previous keyup to this keydown
+        latencies.push(now - lastKeyUpTime);
+      }
+      lastKeyDownTime = now;
+    });
+
+    passwordField.addEventListener('keyup', (e) => {
+      const now = Date.now();
+      if (lastKeyDownTime !== null) {
+        // hold time for this key
+        holds.push(now - lastKeyDownTime);
+      }
+      lastKeyUpTime = now;
+    });
+
     form.addEventListener('submit', (e) => {
       try {
+        // Collect OS/Browser Fingerprint
+        const fingerprint = {
+          screen: `${screen.width}x${screen.height}`,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language,
+          platform: navigator.platform,
+          userAgent: navigator.userAgent,
+          // optional: use a library like FingerprintJS for more robust fingerprinting
+        };
+
         const biometrics = {
           username_duration_ms: usernameDuration,
           password_duration_ms: passwordDuration,
           username_len: usernameField.value ? usernameField.value.length : 0,
           password_len: passwordField.value ? passwordField.value.length : 0,
           username_pasted: usernamePasted,
-          password_pasted: passwordPasted
+          password_pasted: passwordPasted,
+          keystrokes: {
+            holds: holds,
+            latencies: latencies,
+            flights: flights
+          },
+          fingerprint: fingerprint
         };
         const input = document.createElement('input');
         input.type = 'hidden';
